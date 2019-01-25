@@ -6,18 +6,18 @@ use std::fmt::{Debug, Formatter};
 use remacs_macros::lisp_fn;
 
 use crate::{
-    buffers::LispBufferLocalValueRef,
-    data::Lisp_Fwd,
+    buffers::{LispBufferLocalValueRef, LispBufferOrCurrent, LispBufferRef},
     data::{indirect_function, set},
+    data::{Lisp_Fwd, Lisp_Fwd_Buffer_Obj},
     hashtable::LispHashTableRef,
     lisp::{ExternalPtr, LispObject, LispStructuralEqual},
     multibyte::LispStringRef,
-    remacs_sys::{equal_kind, lispsym, EmacsInt, Lisp_Symbol, Lisp_Type, USE_LSB_TAG},
     remacs_sys::{
-        find_symbol_value, get_symbol_declared_special, get_symbol_redirect, make_lisp_symbol,
-        set_symbol_declared_special, set_symbol_redirect, swap_in_symval_forwarding,
-        symbol_interned, symbol_redirect, symbol_trapped_write,
+        buffer_local_flags, find_symbol_value, get_symbol_declared_special, get_symbol_redirect,
+        make_lisp_symbol, set_symbol_declared_special, set_symbol_redirect,
+        swap_in_symval_forwarding, symbol_interned, symbol_redirect, symbol_trapped_write,
     },
+    remacs_sys::{equal_kind, lispsym, EmacsInt, Lisp_Symbol, Lisp_Type, USE_LSB_TAG},
     remacs_sys::{Qcyclic_variable_indirection, Qnil, Qsymbolp, Qunbound},
 };
 
@@ -277,9 +277,7 @@ pub fn symbol_name(symbol: LispSymbolRef) -> LispObject {
 /// global value outside of any lexical scope.
 #[lisp_fn]
 pub fn boundp(mut symbol: LispSymbolRef) -> bool {
-    while symbol.get_redirect() == symbol_redirect::SYMBOL_VARALIAS {
-        symbol = symbol.get_indirect_variable();
-    }
+    symbol = symbol.get_indirect_variable();
 
     let valcontents = match symbol.get_redirect() {
         symbol_redirect::SYMBOL_PLAINVAL => unsafe { symbol.get_value() },
@@ -403,6 +401,41 @@ pub fn symbol_value(symbol: LispSymbolRef) -> LispObject {
         void_variable!(symbol);
     }
     val
+}
+/// Non-nil if VARIABLE has a local binding in buffer BUFFER.
+/// BUFFER defaults to the current buffer.
+#[lisp_fn(min = "1")]
+pub fn local_variable_p(mut symbol: LispSymbolRef, buffer: LispBufferOrCurrent) -> bool {
+    let buf: LispBufferRef = buffer.into();
+
+    symbol = symbol.get_indirect_variable();
+
+    match symbol.get_redirect() {
+        symbol_redirect::SYMBOL_PLAINVAL => false,
+        symbol_redirect::SYMBOL_LOCALIZED => {
+            let blv = unsafe { symbol.get_blv() };
+            if blv.where_.eq(buf) {
+                blv.found()
+            } else {
+                let variable: LispObject = symbol.into();
+                buf.local_vars_iter().any(|local_var| {
+                    let (car, _) = local_var.into();
+                    variable.eq(car)
+                })
+            }
+        }
+        symbol_redirect::SYMBOL_FORWARDED => unsafe {
+            let contents = symbol.get_fwd();
+            if (*contents).u_intfwd.ty == Lisp_Fwd_Buffer_Obj {
+                return false;
+            }
+            let offset = (*contents).u_buffer_objfwd.offset;
+
+            let idx = (*offset.apply_ptr_mut(&mut buffer_local_flags)).as_fixnum_or_error();
+            idx == -1 || buf.value_p(idx as isize)
+        },
+        _ => unreachable!(),
+    }
 }
 
 include!(concat!(env!("OUT_DIR"), "/symbols_exports.rs"));
