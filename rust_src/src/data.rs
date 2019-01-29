@@ -57,6 +57,11 @@ pub unsafe fn as_buffer_objfwd(a: *const Lisp_Fwd) -> Option<Lisp_Buffer_Objfwd>
     }
 }
 
+#[no_mangle]
+pub unsafe extern "C" fn BUFFER_OBJFWDP(a: *const Lisp_Fwd) -> bool {
+    (*a).u_intfwd.ty == Lisp_Fwd_Buffer_Obj
+}
+
 /// Find the function at the end of a chain of symbol function indirections.
 
 /// If OBJECT is a symbol, find the end of its function chain and
