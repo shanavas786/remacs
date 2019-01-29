@@ -57,8 +57,7 @@ pub unsafe fn as_buffer_objfwd(a: *const Lisp_Fwd) -> Option<Lisp_Buffer_Objfwd>
     }
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn BUFFER_OBJFWDP(a: *const Lisp_Fwd) -> bool {
+pub unsafe fn BUFFER_OBJFWDP(a: *const Lisp_Fwd) -> bool {
     (*a).u_intfwd.ty == Lisp_Fwd_Buffer_Obj
 }
 
