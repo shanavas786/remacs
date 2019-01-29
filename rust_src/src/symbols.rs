@@ -6,9 +6,10 @@ use std::fmt::{Debug, Formatter};
 use remacs_macros::lisp_fn;
 
 use crate::{
+    buffers::per_buffer_idx,
     buffers::{LispBufferLocalValueRef, LispBufferOrCurrent, LispBufferRef},
     data::{indirect_function, set},
-    data::{Lisp_Fwd, Lisp_Fwd_Buffer_Obj, BUFFER_OBJFWDP},
+    data::{Lisp_Fwd, BUFFER_OBJFWDP},
     hashtable::LispHashTableRef,
     lisp::{ExternalPtr, LispObject, LispStructuralEqual},
     multibyte::LispStringRef,
@@ -431,7 +432,7 @@ pub fn local_variable_p(mut symbol: LispSymbolRef, buffer: LispBufferOrCurrent) 
             }
 
             let offset = (*contents).u_buffer_objfwd.offset;
-            let idx = (*offset.apply_ptr_mut(&mut buffer_local_flags)).as_fixnum_or_error();
+            let idx = per_buffer_idx(offset.get_byte_offset() as isize);
             idx == -1 || buf.value_p(idx as isize)
         },
         _ => unreachable!(),
