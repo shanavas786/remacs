@@ -6,10 +6,10 @@ use std::fmt::{Debug, Formatter};
 use remacs_macros::lisp_fn;
 
 use crate::{
-    buffers::per_buffer_idx,
+    buffers::per_buffer_idx_from_field_offset,
     buffers::{LispBufferLocalValueRef, LispBufferOrCurrent, LispBufferRef},
-    data::{indirect_function, set},
-    data::{Lisp_Fwd, BUFFER_OBJFWDP},
+    data::Lisp_Fwd,
+    data::{as_buffer_objfwd, indirect_function, set},
     hashtable::LispHashTableRef,
     lisp::{ExternalPtr, LispObject, LispStructuralEqual},
     multibyte::LispStringRef,
@@ -427,13 +427,13 @@ pub fn local_variable_p(mut symbol: LispSymbolRef, buffer: LispBufferOrCurrent) 
         }
         symbol_redirect::SYMBOL_FORWARDED => unsafe {
             let contents = symbol.get_fwd();
-            if !BUFFER_OBJFWDP(contents) {
-                return false;
+            match as_buffer_objfwd(contents) {
+                Some(buffer_objfwd) => {
+                    let idx = per_buffer_idx_from_field_offset(buffer_objfwd.offset);
+                    idx == -1 || buf.value_p(idx as isize)
+                }
+                None => false,
             }
-
-            let offset = (*contents).u_buffer_objfwd.offset;
-            let idx = per_buffer_idx(offset.get_byte_offset() as isize);
-            idx == -1 || buf.value_p(idx as isize)
         },
         _ => unreachable!(),
     }
