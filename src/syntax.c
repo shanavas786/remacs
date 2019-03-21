@@ -180,8 +180,8 @@ static EMACS_INT find_start_modiff;
 
 Lisp_Object scan_lists (EMACS_INT, EMACS_INT, EMACS_INT, bool);
 static void scan_sexps_forward (struct lisp_parse_state *,
-                                ptrdiff_t, ptrdiff_t, ptrdiff_t, EMACS_INT,
-                                bool, int);
+                        ptrdiff_t, ptrdiff_t, ptrdiff_t, EMACS_INT,
+                        bool, int);
 static void internalize_parse_state (Lisp_Object, struct lisp_parse_state *);
 static bool in_classes (int, Lisp_Object);
 static void parse_sexp_propertize (ptrdiff_t charpos);
@@ -190,40 +190,40 @@ static void parse_sexp_propertize (ptrdiff_t charpos);
 bool
 syntax_prefix_flag_p (int c)
 {
-  return SYNTAX_FLAGS_PREFIX (SYNTAX_WITH_FLAGS (c));
+return SYNTAX_FLAGS_PREFIX (SYNTAX_WITH_FLAGS (c));
 }
 
 struct gl_state_s gl_state;		/* Global state of syntax parser.  */
 
 enum { INTERVALS_AT_ONCE = 10 };	/* 1 + max-number of intervals
-					   to scan to property-change.  */
+                                        to scan to property-change.  */
 
 /* Set the syntax entry VAL for char C in table TABLE.  */
 
 static void
 SET_RAW_SYNTAX_ENTRY (Lisp_Object table, int c, Lisp_Object val)
 {
-  CHAR_TABLE_SET (table, c, val);
+CHAR_TABLE_SET (table, c, val);
 }
 
 /* Set the syntax entry VAL for char-range RANGE in table TABLE.
-   RANGE is a cons (FROM . TO) specifying the range of characters.  */
+RANGE is a cons (FROM . TO) specifying the range of characters.  */
 
 static void
 SET_RAW_SYNTAX_ENTRY_RANGE (Lisp_Object table, Lisp_Object range,
-			    Lisp_Object val)
+                        Lisp_Object val)
 {
-  Fset_char_table_range (table, range, val);
+Fset_char_table_range (table, range, val);
 }
 
 /* Extract the information from the entry for character C
-   in the current syntax table.  */
+in the current syntax table.  */
 
 static Lisp_Object
 SYNTAX_MATCH (int c)
 {
-  Lisp_Object ent = SYNTAX_ENTRY (c);
-  return CONSP (ent) ? XCDR (ent) : Qnil;
+Lisp_Object ent = SYNTAX_ENTRY (c);
+return CONSP (ent) ? XCDR (ent) : Qnil;
 }
 
 /* This should be called with FROM at the start of forward
