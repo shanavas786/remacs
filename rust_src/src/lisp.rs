@@ -72,6 +72,10 @@ impl LispObject {
     pub fn from_float(v: EmacsDouble) -> Self {
         unsafe { make_float(v) }
     }
+
+    pub fn fallthrough() -> Self {
+        Self::from_C(0)
+    }
 }
 
 impl<T> From<Option<T>> for LispObject
